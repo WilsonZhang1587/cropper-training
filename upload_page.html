@@ -1,0 +1,79 @@
+<div>
+	模式切換
+	<div class="mode">
+		<button onclick="javascript:location.href='upload01'" type="button" class="btn btn-primary btn-lg">照片模式</button>
+		<button onclick="javascript:location.href='upload02'" type="button" class="btn btn-danger btn-lg">攝影模式</button>
+	</div>
+	<!-- 照片 || 錄影 -->
+	<div class="content">
+		<video id='video'></video>
+		<canvas id="canvas" style="display: none;"></canvas>
+		<img id="image" style="display: none;"/>
+	</div>
+	<!-- 截圖送出 -->
+	<div class="screenshot">
+		<button id="btn" class="btn btn-secondary btn-lg" style="width: 200px;height: 75px;font-size: 20px">截圖</button>
+		<button id="btn01" onclick="javascript:location.href='upload02'" class="btn btn-secondary btn-lg" style="width: 200px;height: 75px;font-size: 20px;display: none;">重新</button>
+		<button id="sendBtn" class="btn btn-success btn-lg" style="width: 200px;height: 75px;font-size: 20px;display: none;">送出</button>
+		<form id="myForm" action="analysis" method="post" style="opacity: 0;">
+			<input id="localImage" name="user_images" type="text" />
+		</form>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var oCanvas = document.getElementById('canvas');
+	var ctx = oCanvas.getContext('2d');  
+	var video = document.querySelector('video');
+	let img = document.querySelector("img");
+	var constraints = {
+		audio: false,
+		// video: true
+		video: { facingMode: { exact: "environment" } }
+	}
+	// 選擇截圖範圍的工具
+	function cropper(image) {
+		const cropper = new Cropper(image, {
+			aspectRatio: 6 / 6
+		});
+		sendLocalImageData = cropper;
+	}
+
+	navigator.mediaDevices.getUserMedia(constraints).then(function(mediaStream) {
+		video.srcObject = mediaStream;
+		video.onloadedmetadata = function(e) {
+			video.play();
+		};
+		const track = mediaStream.getVideoTracks()[0];
+		imageCapture = new ImageCapture(track);
+		return imageCapture.getPhotoSettings();
+	}).then(photoSettings => {
+		console.log(photoSettings)
+		oCanvas.width = photoSettings.imageWidth;
+		oCanvas.height = photoSettings.imageHeight;
+		// oCanvas.width = 480;
+		// oCanvas.height = 640;
+		console.log(oCanvas)
+	})
+	.catch(function(err) {
+		console.log(err.name + ": " + err.message);
+		}); // always check for errors at the end.
+
+	document.getElementById('btn').onclick = function() {
+		ctx.drawImage(video, 0, 0);
+		let canvasUrl = oCanvas.toDataURL();
+		img.src = canvasUrl;
+		cropper(img);
+		document.getElementById("video").style.display="none";
+		document.getElementById("image").style.display="block";
+		document.getElementById("canvas").style.display="none";
+		document.getElementById("btn").style.display="none";
+		document.getElementById("btn01").style.display="block";
+		document.getElementById("sendBtn").style.display="block";
+	};
+	document.getElementById('sendBtn').onclick = function() {
+		let sendData = sendLocalImageData.getCroppedCanvas().toDataURL();
+		$("#localImage").val(sendData);
+		$("#myForm").submit();
+	};
+</script>
